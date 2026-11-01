@@ -105,10 +105,40 @@ class DataImporter {
         return ['counts' => $counts, 'file_count' => count($data['files']), 'notes' => $data['notes'], 'package_hash' => hash_file('sha256', $file)];
     }
 
-    public function requireEmptyTarget(): void {
+    public function targetState(): array {
+        // general_expenses.php can create an INTERNAL row merely by opening the page.
+        // Only the exact, unlinked, zero-value bookkeeping row is disposable.
+        $ids = $this->db->query("SELECT p.id FROM projects p
+            WHERE p.company_id = 1 AND p.client_name = 'INTERNAL'
+              AND p.service_name = 'KEUANGAN PERUSAHAAN' AND p.status = 'internal'
+              AND COALESCE(p.initial_price, 0) = 0 AND COALESCE(p.original_price, 0) = 0
+              AND COALESCE(p.total_price, 0) = 0 AND COALESCE(p.discount, 0) = 0
+              AND COALESCE(p.name_fee, 0) = 0 AND COALESCE(p.partner_commission, 0) = 0
+              AND COALESCE(p.description, '') = '' AND COALESCE(p.due_date, '') = ''
+              AND COALESCE(p.additional_fee_label, '') = '' AND COALESCE(p.payment_link, '') = ''
+              AND (p.client_id IS NULL OR p.client_id = '')
+              AND (p.service_id IS NULL OR p.service_id = '')
+              AND (p.partner_id IS NULL OR p.partner_id = '')
+              AND NOT EXISTS (SELECT 1 FROM transactions t WHERE t.project_id = p.id)
+              AND NOT EXISTS (SELECT 1 FROM project_fees f WHERE f.project_id = p.id)
+              AND NOT EXISTS (SELECT 1 FROM project_documents d WHERE d.project_id = p.id)
+        ")->fetchAll(PDO::FETCH_COLUMN);
+        $counts = [];
         foreach (['projects', 'transactions', 'clients', 'services', 'service_costs', 'project_fees', 'project_documents'] as $table) {
-            if ($this->db->query('SELECT COUNT(*) FROM "' . $table . '"')->fetchColumn() > 0) throw new RuntimeException('Import hanya untuk aplikasi yang belum berisi data bisnis. Data yang ada tidak ditimpa.');
+            $counts[$table] = (int)$this->db->query('SELECT COUNT(*) FROM "' . $table . '"')->fetchColumn();
         }
+        $counts['projects'] -= count($ids);
+        return ['business_counts' => $counts, 'empty_internal_ids' => array_map('intval', $ids)];
+    }
+
+    public function requireEmptyTarget(): void {
+        $labels = ['projects' => 'proyek bisnis', 'transactions' => 'transaksi', 'clients' => 'klien', 'services' => 'layanan', 'service_costs' => 'biaya layanan', 'project_fees' => 'biaya tambahan', 'project_documents' => 'dokumen proyek'];
+        $found = [];
+        foreach ($this->targetState()['business_counts'] as $table => $count) {
+            if ($count > 0) $found[] = $count . ' ' . $labels[$table];
+        }
+        if ($found) throw new RuntimeException('Import belum dapat dilanjutkan: ditemukan ' . implode(', ', $found) . '. Data tersebut tetap dipertahankan.');
+        if ($this->db->query('SELECT COUNT(*) FROM data_imports')->fetchColumn() > 0) throw new RuntimeException('Aplikasi ini sudah pernah melakukan import. Periksa Dashboard dan riwayat import.');
         if ($this->db->query('SELECT COUNT(*) FROM partners')->fetchColumn() > 1 || $this->db->query('SELECT COUNT(*) FROM companies')->fetchColumn() != 1 || $this->db->query('SELECT COUNT(*) FROM companies WHERE id = 1')->fetchColumn() != 1 || $this->db->query('SELECT COUNT(*) FROM users WHERE company_id IS NOT 1')->fetchColumn() > 0) throw new RuntimeException('Struktur perusahaan atau mitra tujuan tidak sesuai dengan instalasi baru.');
     }
 
@@ -159,6 +189,12 @@ class DataImporter {
                     }
                 } finally { fclose($handle); }
                 chmod($target, 0640);
+            }
+            $emptyIds = $this->targetState()['empty_internal_ids'];
+            if ($emptyIds) {
+                $stmt = $this->db->prepare('DELETE FROM projects WHERE id IN (' . implode(', ', array_fill(0, count($emptyIds), '?')) . ')');
+                $stmt->execute($emptyIds);
+                $stmt->closeCursor();
             }
             $this->db->exec('DELETE FROM settings');
             $this->db->exec('DELETE FROM partners');

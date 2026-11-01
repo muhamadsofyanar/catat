@@ -58,3 +58,12 @@ Data operasional tidak disertakan dalam paket GitHub. Untuk mempertahankan data 
 - Pengujian HTTP lokal pada PHP native 8.3.6: 25 pemeriksaan berhasil. Unggahan multipart file pribadi aktual berhasil dipreview dan diimport; seluruh jumlah record bisnis sesuai sumber; semua 69 transaksi identik pada kolom asli; checksum kedua berkas cocok; akun admin tetap; backup dapat diunduh; CSRF invalid dan staf ditolak; pengulangan konfirmasi tidak menggandakan data.
 - Pemeriksaan sintaks PHP 8.4.25 WebAssembly: 93 berkas berhasil. Regresi umum: 23 pemeriksaan berhasil pada PHP native 8.3.6.
 - Log deployment yang diberikan pengguna menunjukkan versi sebelumnya berhasil berstatus healthy. Pembaruan fitur import ini diuji lokal; belum dideploy atau dijalankan pada VPS pengguna. Pengujian HTTP lokal menggunakan PHP development server, bukan Apache/Coolify.
+
+
+## Koreksi pemeriksaan proyek internal kosong — 2 November 2026
+
+Halaman Transaksi Umum membuat proyek INTERNAL / KEUANGAN PERUSAHAAN secara otomatis ketika dibuka. Pemeriksaan import sebelumnya menghitung record tersebut sebagai data bisnis dan menyembunyikan input unggah. Kasus ini berhasil direproduksi pada fixture bersih.
+
+Pemeriksaan sekarang membedakan proyek internal dengan identitas bawaan yang tepat, semua nominal nol, tanpa relasi, catatan, tanggal jatuh tempo, transaksi, biaya, atau dokumen. Proyek internal yang benar-benar kosong digantikan saat import di dalam transaksi dan tetap tercakup pada backup sebelum import. Kegagalan import mengembalikan proyek internal tersebut. Proyek bisnis bernilai nol, proyek internal bernilai atau memiliki catatan, serta transaksi bernilai nol tetap memblokir import dan tidak dihapus.
+
+Halaman yang diblokir sekarang menampilkan hitungan data penyebabnya. Pengujian HTTP lokal: 29 pemeriksaan lulus, termasuk membuka Transaksi Umum sebelum import, keberadaan input file setelahnya, diagnostik saat klien sudah ada, import file data asli, dan kesesuaian 69 transaksi dengan sumber. Koreksi ini belum diterapkan langsung pada VPS pengguna.

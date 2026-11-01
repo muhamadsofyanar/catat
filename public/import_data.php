@@ -87,6 +87,7 @@ if ($path && is_file($path)) {
 }
 $blocked = '';
 try { $importer->requireEmptyTarget(); } catch (RuntimeException $e) { $blocked = $e->getMessage(); }
+$targetState = $importer->targetState();
 $history = $importer->history();
 $labels = ['companies' => 'Perusahaan', 'clients' => 'Klien', 'partners' => 'Mitra', 'services' => 'Layanan', 'service_costs' => 'Biaya standar layanan', 'projects' => 'Proyek', 'project_fees' => 'Biaya tambahan proyek', 'transactions' => 'Transaksi', 'project_documents' => 'Dokumen tercatat', 'settings' => 'Pengaturan'];
 $pageTitle = 'Import Data Lama';
@@ -99,7 +100,23 @@ require __DIR__ . '/../includes/header.php';
     <div class="alert alert-success">Import berhasil: <strong><?= (int)$flash['projects'] ?> proyek, <?= (int)$flash['transactions'] ?> transaksi, <?= (int)$flash['clients'] ?> klien</strong>. <a href="index.php">Buka Dashboard</a>.</div>
     <?php endif; ?>
     <?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div><?php endif; ?>
-    <?php if ($blocked): ?><div class="alert alert-info"><?= htmlspecialchars($blocked, ENT_QUOTES, 'UTF-8') ?></div>
+    <?php if (!$blocked && $targetState['empty_internal_ids']): ?>
+    <div class="alert alert-info">Terdapat <?= count($targetState['empty_internal_ids']) ?> proyek internal kosong bawaan aplikasi. Proyek kosong ini tidak menghalangi import dan akan digantikan oleh data lama setelah backup dibuat.</div>
+    <?php endif; ?>
+    <?php if ($blocked): ?>
+    <div class="alert alert-warning"><?= htmlspecialchars($blocked, ENT_QUOTES, 'UTF-8') ?></div>
+    <div class="card border-0 mb-4"><div class="card-body">
+        <h5>Data yang terdeteksi pada aplikasi ini</h5>
+        <table class="table table-sm"><thead><tr><th>Jenis data</th><th class="text-end">Jumlah</th></tr></thead><tbody>
+        <?php foreach ($targetState['business_counts'] as $table => $count): ?>
+        <tr><td><?= $table === 'projects' ? 'Proyek bisnis' : $labels[$table] ?></td><td class="text-end"><?= (int)$count ?></td></tr>
+        <?php endforeach; ?>
+        <tr><td>Proyek internal kosong bawaan</td><td class="text-end"><?= count($targetState['empty_internal_ids']) ?></td></tr>
+        </tbody></table>
+        <p>Import tidak menimpa data bisnis yang sudah ada. Periksa daftar di atas terlebih dahulu; jangan hapus data yang masih diperlukan.</p>
+        <a class="btn btn-outline-primary" href="projects.php?status=all">Lihat Proyek</a>
+        <a class="btn btn-outline-secondary" href="clients.php">Lihat Klien</a>
+    </div></div>
     <?php elseif ($preview): ?>
     <div class="card border-0 mb-4"><div class="card-body">
         <h5>2. Periksa data sebelum import</h5>

@@ -15,7 +15,7 @@ File **`legavoice-data-lama.json` diberikan terpisah** dari paket kode. File ter
 5. Ketik **IMPORT DATA LAMA**, lalu klik **Import Sekarang**.
 6. Buka Dashboard. Halaman import juga menyediakan unduhan database tujuan sebelum import.
 
-Import hanya berlaku pada aplikasi yang belum berisi proyek, transaksi, klien, layanan, atau data bisnis terkait. Import tidak menggabungkan data ke aplikasi yang sudah digunakan dan tidak menghapus data bisnis yang telah ada. Jangan jalankan metode penyalinan SQLite manual dan metode import JSON pada instalasi yang sama.
+Import hanya berlaku pada aplikasi yang belum berisi proyek, transaksi, klien, layanan, atau data bisnis terkait. Proyek internal kosong yang dibuat otomatis saat membuka Transaksi Umum tidak menghalangi import. Aplikasi menggantikan proyek internal kosong tersebut di dalam transaksi, setelah backup dibuat; proyek internal yang memiliki nilai, catatan, transaksi, biaya, atau dokumen tetap dilindungi. Jika ada data bisnis lain, halaman menampilkan jumlah data penyebab blokir. Import tidak menggabungkan data ke aplikasi yang sudah digunakan dan tidak menghapus data bisnis yang telah ada. Jangan jalankan metode penyalinan SQLite manual dan metode import JSON pada instalasi yang sama.
 
 Akun login saat ini dan log aktivitas aplikasi baru tetap dipertahankan. Tiga akun serta log aktivitas dari database lama tidak dimasukkan; buat kembali akun staf melalui Manajemen User bila dibutuhkan. Identitas perusahaan, mitra bawaan, dan pengaturan akan mengikuti sumber lama. Paket import menyertakan dua berkas unggahan lama; database sumber tidak memiliki record dokumen proyek sehingga import tidak membuat relasi dokumen baru secara otomatis.
 

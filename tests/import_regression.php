@@ -36,6 +36,29 @@ $importer = new \Core\DataImporter($pdo, $work);
 $preview = $importer->inspect($file);
 verifyImport($preview['counts']['projects'] === 1 && $preview['counts']['transactions'] === 1, 'preview lists business records');
 verifyImport($preview['file_count'] === 1, 'preview validates bundled document');
+// Opening general_expenses.php creates this bookkeeping row before any business data exists.
+$pdo->exec("INSERT INTO projects (id, client_name, service_name, status) VALUES (7, 'INTERNAL', 'KEUANGAN PERUSAHAAN', 'internal')");
+$importer->requireEmptyTarget();
+verifyImport(true, 'empty automatic internal project does not block import');
+verifyImport($importer->targetState()['business_counts']['projects'] === 0 && $importer->targetState()['empty_internal_ids'] === [7], 'diagnostics distinguish empty internal and business projects');
+$pdo->exec('UPDATE projects SET total_price = 1 WHERE id = 7');
+rejectedImport(fn() => $importer->requireEmptyTarget(), 'internal project with value is protected', '1 proyek bisnis');
+$pdo->exec("UPDATE projects SET total_price = 0, description = 'User content' WHERE id = 7");
+rejectedImport(fn() => $importer->requireEmptyTarget(), 'internal project with description is protected', '1 proyek bisnis');
+$pdo->exec('UPDATE projects SET description = NULL WHERE id = 7');
+$pdo->exec("INSERT INTO projects (id, client_name, service_name, status) VALUES (8, 'Real client', 'Real service', 'ongoing')");
+rejectedImport(fn() => $importer->apply($file, 'admin'), 'zero-value business project is not deleted', '1 proyek bisnis');
+verifyImport($pdo->query('SELECT COUNT(*) FROM projects WHERE id = 8')->fetchColumn() == 1, 'rejected import preserves business project');
+$pdo->exec('DELETE FROM projects WHERE id = 8');
+$pdo->exec("INSERT INTO transactions (project_id, type, amount) VALUES (7, 'expense', 0)");
+rejectedImport(fn() => $importer->apply($file, 'admin'), 'internal project with a zero-value transaction is protected', '1 transaksi');
+verifyImport($pdo->query('SELECT COUNT(*) FROM transactions')->fetchColumn() == 1, 'rejected import preserves linked transaction');
+$pdo->exec('DELETE FROM transactions');
+$pdo->exec("INSERT INTO clients (id, name) VALUES (99, 'Existing client')");
+rejectedImport(fn() => $importer->requireEmptyTarget(), 'existing client is diagnosed', '1 klien');
+$pdo->exec('DELETE FROM clients WHERE id = 99');
+
+
 $wrong = $package; $wrong['tables']['users'] = [['id' => 1, 'role' => 'admin']];
 $write($wrong); rejectedImport(fn() => $importer->inspect($file), 'rejects account table import');
 $wrong = $package; $wrong['files'][0]['path'] = 'uploads/../config/db.php';
@@ -52,7 +75,7 @@ $write($package);
 // Force an actual SQL failure after files have been created. All effects must roll back.
 $pdo->exec("CREATE TRIGGER fail_import BEFORE INSERT ON transactions BEGIN SELECT RAISE(ABORT, 'test failure'); END");
 rejectedImport(fn() => $importer->apply($file, 'admin'), 'SQL failure rejects import', 'test failure');
-verifyImport($pdo->query('SELECT COUNT(*) FROM projects')->fetchColumn() == 0, 'failed import rolls back database');
+verifyImport($pdo->query('SELECT COUNT(*) FROM projects')->fetchColumn() == 1, 'failed import restores original empty internal project');
 verifyImport(!is_file($work . '/uploads/projects/7/test.pdf'), 'failed import removes newly copied document');
 verifyImport($pdo->query('SELECT COUNT(*) FROM data_imports')->fetchColumn() == 0, 'failed import does not mark success');
 $pdo->exec('DROP TRIGGER fail_import');
@@ -64,7 +87,7 @@ verifyImport($pdo->query('SELECT status FROM projects WHERE id = 7')->fetchColum
 verifyImport($pdo->query('SELECT password FROM users WHERE id = 1')->fetchColumn() === $passwordBefore, 'preserves current login');
 verifyImport(file_get_contents($work . '/uploads/projects/7/test.pdf') === $content, 'restores exact document bytes');
 $backup = new PDO('sqlite:' . $result['backup_path']);
-verifyImport($backup->query('SELECT COUNT(*) FROM projects')->fetchColumn() == 0, 'backup contains pre-import state');
+verifyImport($backup->query('SELECT COUNT(*) FROM projects')->fetchColumn() == 1, 'backup preserves pre-import internal project');
 verifyImport($pdo->query('PRAGMA integrity_check')->fetchColumn() === 'ok' && !$pdo->query('PRAGMA foreign_key_check')->fetchAll(), 'imported database integrity');
 rejectedImport(fn() => $importer->apply($file, 'admin'), 'duplicate import is blocked');
 verifyImport($pdo->query('SELECT COUNT(*) FROM projects')->fetchColumn() == 1, 'duplicate attempt leaves existing data intact');
