@@ -1,0 +1,22 @@
+name: PHP and container checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image and lint PHP
+        run: docker build --pull -t legavoice:test .
+      - name: Regression tests
+        run: docker run --rm --entrypoint php legavoice:test tests/regression.php
+      - name: Container startup and HTTP health
+        run: |
+          docker run -d --name legavoice-test -e ADMIN_PASSWORD=temporary-test-password -e JWT_SECRET=temporary-test-secret-at-least-32-characters -e SESSION_SECURE_COOKIE=false legavoice:test
+          for i in $(seq 1 30); do
+            if docker exec legavoice-test php -r 'exit(@file_get_contents("http://127.0.0.1/public/healthz.php") === "{\"status\":\"ok\"}" ? 0 : 1);'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs legavoice-test
+          exit 1

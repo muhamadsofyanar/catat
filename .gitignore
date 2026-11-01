@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.db
+*.zip
+*.log
+/tmp/*
+/uploads/*
+/storage/*
+/archive/
+/vendor/
+/node_modules/
+.DS_Store
