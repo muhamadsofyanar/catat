@@ -252,6 +252,7 @@ if ($pdo->query("SELECT COUNT(*) FROM users")->fetchColumn() == 0) {
 // --- Migrations (Add Columns) ---
 
 $migrations = [
+    ['clients', 'created_at', 'DATETIME'],
     ['projects', 'original_price', $TYPE_MONEY],
     ['projects', 'service_id', $TYPE_INT],
     ['projects', 'client_id', $TYPE_INT],

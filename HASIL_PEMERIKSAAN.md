@@ -46,3 +46,15 @@ Kode sumber memiliki controller Dashboard lama yang belum terhubung ke entry poi
 Beberapa endpoint lama belum menerapkan company_id secara menyeluruh; kolom company_id tidak membuktikan aplikasi siap multitenant. Aksi mutasi lama yang memakai GET dan perlindungan CSRF menyeluruh belum direfaktor. Definisi laba, pembayaran aktual, hutang vendor, dan alokasi 40/60 tidak seragam pada seluruh halaman; perbaikan ini tidak mengesahkan rumus tersebut sebagai laporan akuntansi. Handler prive yang baru mengikuti formula pada form lama dan menerapkan batas pada server.
 
 Data operasional tidak disertakan dalam paket GitHub. Untuk mempertahankan data lama, ikuti bagian migrasi README dengan database dan uploads dari ZIP asli. Kredensial akun lama tidak diubah oleh paket kode ini.
+
+
+## Pembaruan fitur import melalui browser
+
+- Menambahkan `public/import_data.php` dan `core/DataImporter.php`, tautan menu admin, migrasi timestamp klien, serta pengujian CI untuk import.
+- Menyiapkan file data pribadi terpisah dari kode repository. Isi: 55 proyek, 69 transaksi, 49 klien, 2 mitra, 5 layanan, 15 rincian biaya layanan, 49 biaya tambahan proyek, identitas/pengaturan perusahaan, dan dua berkas unggahan. Data source tidak memiliki record project_documents.
+- Mempertahankan akun dan password target. Data akun serta log aktivitas lama tetap tersedia hanya pada ZIP sumber, bukan file import.
+- Enam service_id teks kosong dinormalisasi menjadi null. Angka transaksi/proyek tidak diubah. Satu status completed mengikuti normalisasi done.
+- `tests/import_regression.php`: 21 pemeriksaan berhasil pada PHP native 8.3.6. Mencakup validasi, penolakan akun/path berbahaya/checksum rusak/relasi salah/perusahaan lain, kegagalan SQL yang disengaja, rollback database dan berkas, backup sebelum import, akun tetap, dan penolakan duplikasi.
+- Pengujian HTTP lokal pada PHP native 8.3.6: 25 pemeriksaan berhasil. Unggahan multipart file pribadi aktual berhasil dipreview dan diimport; seluruh jumlah record bisnis sesuai sumber; semua 69 transaksi identik pada kolom asli; checksum kedua berkas cocok; akun admin tetap; backup dapat diunduh; CSRF invalid dan staf ditolak; pengulangan konfirmasi tidak menggandakan data.
+- Pemeriksaan sintaks PHP 8.4.25 WebAssembly: 93 berkas berhasil. Regresi umum: 23 pemeriksaan berhasil pada PHP native 8.3.6.
+- Log deployment yang diberikan pengguna menunjukkan versi sebelumnya berhasil berstatus healthy. Pembaruan fitur import ini diuji lokal; belum dideploy atau dijalankan pada VPS pengguna. Pengujian HTTP lokal menggunakan PHP development server, bukan Apache/Coolify.

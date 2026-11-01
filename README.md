@@ -2,6 +2,27 @@
 
 Aplikasi PHP untuk proyek, klien, mitra, transaksi, piutang, hutang, dan dokumen. Paket ini menyiapkan PHP 8.4 + Apache + SQLite melalui Docker. Tidak perlu Node.js, Composer, atau database MySQL terpisah untuk menjalankan aplikasi.
 
+## Import data lama melalui aplikasi
+
+Versi ini menyediakan menu **admin → Import Data Lama**. Jika aplikasi sudah terpasang, unggah isi paket kode terbaru ke repository yang sama, commit perubahan, lalu deploy ulang di Coolify. Environment dan persistent storage tetap menggunakan pengaturan yang sudah dibuat.
+
+File **`legavoice-data-lama.json` diberikan terpisah** dari paket kode. File tersebut berisi data bisnis pribadi; simpan di komputer Anda dan jangan unggah ke GitHub.
+
+1. Setelah deploy ulang selesai, login dengan akun admin saat ini.
+2. Klik nama admin di kanan atas, kemudian **Import Data Lama**. Alternatif: buka `/public/import_data.php` pada domain aplikasi.
+3. Pilih `legavoice-data-lama.json`, lalu klik **Periksa File**.
+4. Cocokkan ringkasannya: **55 proyek, 69 transaksi, 49 klien, 2 mitra, 5 layanan**.
+5. Ketik **IMPORT DATA LAMA**, lalu klik **Import Sekarang**.
+6. Buka Dashboard. Halaman import juga menyediakan unduhan database tujuan sebelum import.
+
+Import hanya berlaku pada aplikasi yang belum berisi proyek, transaksi, klien, layanan, atau data bisnis terkait. Import tidak menggabungkan data ke aplikasi yang sudah digunakan dan tidak menghapus data bisnis yang telah ada. Jangan jalankan metode penyalinan SQLite manual dan metode import JSON pada instalasi yang sama.
+
+Akun login saat ini dan log aktivitas aplikasi baru tetap dipertahankan. Tiga akun serta log aktivitas dari database lama tidak dimasukkan; buat kembali akun staf melalui Manajemen User bila dibutuhkan. Identitas perusahaan, mitra bawaan, dan pengaturan akan mengikuti sumber lama. Paket import menyertakan dua berkas unggahan lama; database sumber tidak memiliki record dokumen proyek sehingga import tidak membuat relasi dokumen baru secara otomatis.
+
+File sumber memiliki enam referensi layanan kosong (`service_id = ""`); paket mengubahnya menjadi `null`. Nominal proyek dan transaksi dipertahankan. Status `completed` dinormalisasi menjadi `done`, sesuai standar aplikasi hasil perbaikan.
+
+Import memeriksa format, ID, relasi, jenis berkas, checksum, CSRF, dan hak admin. Aplikasi membuat snapshot SQLite sebelum penulisan, menjalankan perubahan dalam transaksi, menolak import berulang, dan membersihkan berkas yang baru dibuat bila transaksi gagal. Backup database tidak mencakup folder uploads; pertahankan ZIP sumber asli sebagai cadangan lengkap data lama.
+
 ## 1. Upload ke GitHub
 
 1. Ekstrak ZIP hasil perbaikan.
@@ -111,7 +132,7 @@ docker build --pull -t legavoice .
 docker run --rm --entrypoint php legavoice tests/regression.php
 ```
 
-Pengujian yang sudah dijalankan pada lingkungan pemeriksaan: parser PHP 8.4 untuk 90 berkas; 23 pemeriksaan regresi; permintaan halaman utama, penyimpanan proyek/transaksi/prive; serta login API, JWT invalid, Settings, upload/download dokumen, dan backup SQLite. Runtime pengujian memakai PHP WebAssembly 8.4.25. Build Docker/Apache dan deployment VPS belum dijalankan pada lingkungan pemeriksaan ini. Lihat `HASIL_PEMERIKSAAN.md` untuk rincian dan batas pengujian.
+Pengujian yang sudah dijalankan pada lingkungan pemeriksaan: parser PHP 8.4 untuk 93 berkas; 23 pemeriksaan regresi umum dan 21 pemeriksaan import; permintaan halaman utama, penyimpanan proyek/transaksi/prive; serta login API, JWT invalid, Settings, upload/download dokumen, dan backup SQLite. Runtime pengujian memakai PHP WebAssembly 8.4.25. Build Docker/Apache dan deployment VPS belum dijalankan pada lingkungan pemeriksaan ini. Lihat `HASIL_PEMERIKSAAN.md` untuk rincian dan batas pengujian.
 
 ## Batas penggunaan
 

@@ -302,6 +302,7 @@ if (!$brandLogo) {
                         <li><h6 class="dropdown-header text-uppercase fw-bold text-muted small"><?= $_SESSION['role'] ?? 'staff' ?></h6></li>
                         <?php if(($_SESSION['role'] ?? '') === 'admin'): ?>
                         <li><a class="dropdown-item" href="<?= $base ?>settings.php"><i class="bi bi-gear-fill me-2"></i> Pengaturan</a></li>
+                        <li><a class="dropdown-item" href="<?= $base ?>import_data.php"><i class="bi bi-database-add me-2"></i> Import Data Lama</a></li>
                         <li><a class="dropdown-item" href="<?= $base ?>users.php"><i class="bi bi-people-fill me-2"></i> Manajemen User</a></li>
                         <li><a class="dropdown-item" href="<?= $base ?>activity_logs.php"><i class="bi bi-activity me-2"></i> Log Aktivitas</a></li>
                         <li><a class="dropdown-item" href="<?= $base ?>health_check.php"><i class="bi bi-shield-check me-2"></i> Health Check</a></li>

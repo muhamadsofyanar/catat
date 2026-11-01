@@ -9,6 +9,8 @@ jobs:
         run: docker build --pull -t legavoice:test .
       - name: Regression tests
         run: docker run --rm --entrypoint php legavoice:test tests/regression.php
+      - name: Import regression tests
+        run: docker run --rm --entrypoint php legavoice:test tests/import_regression.php
       - name: Container startup and HTTP health
         run: |
           docker run -d --name legavoice-test -e ADMIN_PASSWORD=temporary-test-password -e JWT_SECRET=temporary-test-secret-at-least-32-characters -e SESSION_SECURE_COOKIE=false legavoice:test

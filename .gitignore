@@ -14,3 +14,7 @@
 /vendor/
 /node_modules/
 .DS_Store
+
+# Private migration exports
+*data-lama*.json
+*.lvimport

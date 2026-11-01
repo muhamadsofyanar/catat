@@ -16,3 +16,6 @@
 .DS_Store
 .git
 .github
+
+*data-lama*.json
+*.lvimport
